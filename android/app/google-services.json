@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "721577570360",
+    "project_id": "mad-hw4-28ef3",
+    "storage_bucket": "mad-hw4-28ef3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:721577570360:android:9b1b19432b68379a9636cd",
+        "android_client_info": {
+          "package_name": "com.example.mad_chatboard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVJj6ETD56Ppy2QgYcSzKNNgnwV-oCgHs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
