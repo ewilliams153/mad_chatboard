@@ -135,6 +135,13 @@ class LoggedInPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final chatRooms = [
+      {'title': 'Games', 'color': Colors.blue},
+      {'title': 'Business', 'color': Colors.green},
+      {'title': 'Public Health', 'color': Colors.orange},
+      {'title': 'Study', 'color': Colors.purple},
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('ChatBoard'),
@@ -152,11 +159,11 @@ class LoggedInPage extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
               'Hi ${user?.email}, you are logged in',
               style: const TextStyle(
                 fontSize: 24,
@@ -164,8 +171,43 @@ class LoggedInPage extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: chatRooms.length,
+              itemBuilder: (context, index) {
+                final room = chatRooms[index];
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: InkWell(
+                    onTap: () {
+                      // TODO: Navigate to specific chat room
+                    },
+                    child: Container(
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: room['color'] as Color,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          room['title'] as String,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
