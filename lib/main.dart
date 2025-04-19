@@ -151,10 +151,10 @@ class _LoggedInPageState extends State<LoggedInPage> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final chatRooms = [
-      {'title': 'Games', 'color': Colors.blue},
-      {'title': 'Business', 'color': Colors.green},
-      {'title': 'Public Health', 'color': Colors.orange},
-      {'title': 'Study', 'color': Colors.purple},
+      {'title': 'Games', 'color': const Color(0xFFC33149)},
+      {'title': 'Business', 'color': const Color(0xFFA8C256)},
+      {'title': 'Public Health', 'color': const Color(0xFFC29979)},
+      {'title': 'Study', 'color': const Color(0xFF495867)},
     ];
 
     return Scaffold(
@@ -302,17 +302,17 @@ class _LoggedInPageState extends State<LoggedInPage> {
           BottomNavyBarItem(
             icon: const Icon(Icons.home),
             title: const Text("Home"),
-            activeColor: Colors.blue,
+            activeColor: const Color(0xFFC33149),
           ),
           BottomNavyBarItem(
             icon: const Icon(Icons.person),
             title: const Text("Profile"),
-            activeColor: Colors.green,
+            activeColor: const Color(0xFFA8C256),
           ),
           BottomNavyBarItem(
             icon: const Icon(Icons.settings),
             title: const Text("Settings"),
-            activeColor: Colors.orange,
+            activeColor: const Color(0xFF495867),
           ),
         ],
       ),
@@ -527,8 +527,20 @@ class ChatRoomPage extends StatefulWidget {
 
 class _ChatRoomPageState extends State<ChatRoomPage> {
   final TextEditingController _messageController = TextEditingController();
-  final List<Map<String, String>> _messages = [];
   final ScrollController _scrollController = ScrollController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late Stream<QuerySnapshot> _messagesStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _messagesStream = _firestore
+        .collection('chatrooms')
+        .doc(widget.roomName.toLowerCase())
+        .collection('messages')
+        .orderBy('timestamp', descending: false)
+        .snapshots();
+  }
 
   @override
   void dispose() {
@@ -537,22 +549,21 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     if (_messageController.text.isNotEmpty) {
-      setState(() {
-        _messages.add({
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await _firestore
+            .collection('chatrooms')
+            .doc(widget.roomName.toLowerCase())
+            .collection('messages')
+            .add({
           'text': _messageController.text,
-          'sender': FirebaseAuth.instance.currentUser?.email ?? 'Anonymous',
-          'time': DateTime.now().toString(),
+          'sender': user.email,
+          'timestamp': FieldValue.serverTimestamp(),
         });
         _messageController.clear();
-      });
-      // Scroll to bottom when new message is added
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      }
     }
   }
 
@@ -570,20 +581,40 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         children: [
           // Messages display area
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(8.0),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: ListTile(
-                    title: Text(message['text']!),
-                    subtitle: Text(
-                      '${message['sender']} • ${DateTime.parse(message['time']!).toLocal().toString().substring(11, 16)}',
-                    ),
-                  ),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _messagesStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Error loading messages'));
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final messages = snapshot.data!.docs;
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(8.0),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index].data() as Map<String, dynamic>;
+                    final timestamp = message['timestamp'] as Timestamp?;
+                    
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: ListTile(
+                        title: Text(message['text']),
+                        subtitle: Text(
+                          '${message['sender']} • ${timestamp != null ? 
+                            DateTime.fromMillisecondsSinceEpoch(timestamp.millisecondsSinceEpoch)
+                                .toLocal().toString().substring(11, 16) : 
+                            'Just now'}',
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
